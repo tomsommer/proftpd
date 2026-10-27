@@ -167,7 +167,6 @@ static void systemd_mod_unload_ev(const void *event_data, void *user_data) {
 
 static void systemd_postparse_ev(const void *event_data, void *user_data) {
   config_rec *c;
-  char main_pid[1024];
 
   c = find_config(main_server->conf, CONF_PARAM, "SystemdEngine", FALSE);
   if (c != NULL) {
@@ -182,19 +181,9 @@ static void systemd_postparse_ev(const void *event_data, void *user_data) {
     return;
   }
 
-  /* Note that this event is generated prior to writing out the PidFile,
-   * at least on initial startup.  And that means that systemd won't be
-   * able to read the PidFile, and thus won't know the "main PID", without
-   * which, it gets fussy.
-   *
-   * To work around this, we notify systemd directly of the main PID.
-   */
-  memset(main_pid, '\0', sizeof(main_pid));
-  pr_snprintf(main_pid, sizeof(main_pid)-1, "MAINPID=%lu",
-    (unsigned long) getpid());
-  notify_systemd(main_pid);
-
-  notify_systemd("READY=1");
+  if (started_up == TRUE) {
+    notify_systemd("READY=1");
+  }
 }
 
 static void get_current_time(struct timespec *ts) {
@@ -248,6 +237,8 @@ static void systemd_shutdown_ev(const void *event_data, void *user_data) {
 }
 
 static void systemd_startup_ev(const void *event_data, void *user_data) {
+  char main_pid[1024];
+
   if (systemd_engine == FALSE) {
     return;
   }
@@ -264,6 +255,12 @@ static void systemd_startup_ev(const void *event_data, void *user_data) {
    * first place and not, for example, after doing just a syntax check.
    */
   started_up = TRUE;
+
+  memset(main_pid, '\0', sizeof(main_pid));
+  pr_snprintf(main_pid, sizeof(main_pid)-1, "MAINPID=%lu",
+    (unsigned long) getpid());
+  notify_systemd(main_pid);
+  notify_systemd("READY=1");
 }
 
 /* Initialization routines

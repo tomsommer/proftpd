@@ -1997,15 +1997,15 @@ static void standalone_main(void) {
   PRIVS_RELINQUISH
   pr_close_scoreboard(TRUE);
 
-  pr_event_generate("core.startup", NULL);
-
-  init_bindings();
-
   if (pr_pidfile_write() < 0) {
     pr_log_pri(PR_LOG_ERR, "error writing PidFile '%s': %s", pr_pidfile_get(),
       strerror(errno));
     exit(1);
   }
+
+  pr_event_generate("core.startup", NULL);
+
+  init_bindings();
 
   pr_log_pri(PR_LOG_NOTICE, "ProFTPD %s (built %s) standalone mode STARTUP",
     PROFTPD_VERSION_TEXT " " PR_STATUS, BUILD_STAMP);
